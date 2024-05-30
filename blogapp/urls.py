@@ -27,5 +27,8 @@ urlpatterns = [
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('admin/', admin.site.urls),   
     path('', include('blog.urls')),
-    path('account/', include('account.urls'))
+    path('account/', include('account.urls')),
+    path('admin/', admin.site.urls),
+    path('api/', include('myapi.urls')),
+    # path('weather/', include('weather.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
