@@ -14,8 +14,11 @@
              </li>
              {% if user.is_authenticated %}
              <li class="nav-item">
-               <a class="nav-link"  href="{% url 'weather_view' %}">Hava Durumu</a>
+               <a class="nav-link"  href="{% url 'weather' %}">Hava Durumu</a>
             </li>
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'users-list' %}">Kullanıcılar</a>
+           </li>
              {% endif %}
             </ul>
             <ul class="navbar-nav ms-auto">

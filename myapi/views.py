@@ -1,10 +1,15 @@
 from rest_framework import status
+from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 import requests 
+import json
+import os
+from .UserSerializer import UserSerializer
 
 @api_view(['POST'])
 def login_request(request):
@@ -56,17 +61,29 @@ def logout_request(request):
     logout(request)
     return Response({"detail": "Logout successful."}, status=status.HTTP_200_OK)
 
+def get_city_list():
+    file_path = os.path.join(settings.BASE_DIR, 'static', 'jsons', 'cities.json')
+    with open(file_path, 'r', encoding='utf-8') as file:
+        cities = json.load(file) 
+    return [city['il_adi'] for city in cities]
+
+
 
 @api_view(['GET'])
-def weather_view(request):
+def weather(request):
     api_key = '05c13ccf608154dea88a4e589bf16011'
-    city = request.GET.get('city', 'Istanbul') 
-    base_url = f'https://api.openweathermap.org/data/2.5/weather?appid={api_key}&q={city}'
+    cities = get_city_list()
+    city = request.GET.get('city') 
 
+    if not city:
+        return JsonResponse({'error': 'Şehir belirtilmedi.', 'cities': cities})
+
+    if city not in cities:
+        return JsonResponse({'error': 'Geçersiz şehir seçimi.', 'cities': cities})
+
+    base_url = f'https://api.openweathermap.org/data/2.5/weather?appid={api_key}&q={city}'
     response = requests.get(base_url)
     weather_data = response.json()
-
-    print(weather_data)
 
     if response.status_code == 200:
         if 'main' in weather_data:
@@ -77,10 +94,48 @@ def weather_view(request):
                 'temperature': temperature_celsius,
                 'condition': weather_data['weather'][0]['description'],               
             }
-            return render(request, 'blog/weather_view.html', {'data': data})
+            return JsonResponse({'data': data})
         else:
-           return render(request, 'blog/weather_view.html', {'error': "Invalid API response format."})
+           return JsonResponse({'error': "Geçersiz API yanıtı formatı."})
     else:
-        return render(request, 'blog/weather_view.html', {'error': "Failed to retrieve weather data."})
+        return JsonResponse({'error': "Hava durumu verileri alınamadı."})
+    
+
+@api_view(['GET'])
+def users(request):
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def user_detail(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
 
 
+def edit_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        user.username = request.POST.get('username')
+        user.email = request.POST.get('email')
+        user.first_name = request.POST['first_name']
+        user.last_name = request.POST['last_name']
+        user.save()
+        return redirect('users-list')
+    return render(request, 'blog/edit_user.html', {'user': user})
+
+def users_list(request):
+    users = User.objects.all()
+    return render(request, 'blog/users.html', {'users': users})
+
+@api_view(['DELETE'])
+def delete_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    user.delete()
+    return redirect('users-list')
+    

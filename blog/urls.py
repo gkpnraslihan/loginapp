@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
-from myapi.views import weather_view 
+from myapi.views import weather
+
 #http://127.0.0.1:8000/          =>homepage
 #http://127.0.0.1:8000/index     =>homepage
 #http://127.0.0.1:8000/blogs     =>blogs
@@ -11,6 +12,8 @@ urlpatterns = [
     path("blogs", views.blogs, name="blogs"),
     path("category/<slug:slug>", views.blogs_by_category, name="blogs_by_category"),
     path("blogs/<slug:slug>", views.blog_details, name="blog_details"),
-    path("weather_view/", weather_view, name="weather_view"), 
+    path("weather",weather, name="weather"), 
+   
+    
   
 ]
