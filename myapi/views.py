@@ -121,13 +121,14 @@ def user_detail(request, pk):
 def edit_user(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
-        user.username = request.POST.get('username')
-        user.email = request.POST.get('email')
-        user.first_name = request.POST['first_name']
-        user.last_name = request.POST['last_name']
-        user.save()
-        return redirect('users-list')
-    return render(request, 'blog/edit_user.html', {'user': user})
+        serializer = UserSerializer(user, data=request.POST)
+        if serializer.is_valid():
+            serializer.save()
+            return redirect('users-list')
+        return render(request, 'blog/edit_user.html', {'serializer': serializer})
+    else:
+        serializer = UserSerializer(user)
+        return render(request, 'blog/edit_user.html', {'serializer': serializer})
 
 def users_list(request):
     users = User.objects.all()
@@ -136,6 +137,7 @@ def users_list(request):
 @api_view(['DELETE'])
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
+    serializer = UserSerializer(user)
     user.delete()
-    return redirect('users-list')
+    return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
     
