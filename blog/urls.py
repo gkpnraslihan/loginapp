@@ -14,7 +14,5 @@ urlpatterns = [
     path("blogs/<slug:slug>", views.blog_details, name="blog_details"),
     path("weather",weather, name="weather"), 
     
-   
-    
   
 ]

@@ -1,6 +1,6 @@
 from rest_framework import status
 from django.conf import settings
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -10,7 +10,8 @@ import requests
 import json
 import os
 from .UserSerializer import UserSerializer
- 
+from rest_framework.permissions import IsAuthenticated
+
 
 @api_view(['POST'])
 def login_request(request):
@@ -137,9 +138,9 @@ def users_list(request):
     return render(request, 'blog/users.html', {'users': users})
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
-    serializer = UserSerializer(user)
     user.delete()
-    return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+    return Response(status=status.HTTP_200_OK, content_type='application/json')
     

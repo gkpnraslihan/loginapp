@@ -1,46 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-</head>
-<body>
-    {% include 'partials/_navbar.html' %}
-    <div class="container mt-4">
-        <h1>Kullanıcılar</h1>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Firstname</th>
-                    <th>Lastname</th>
-                    <th>Email</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.first_name }}</td>
-                    <td>{{ user.last_name }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>
-                        <a href="{% url 'edit-user' user.id %}" class="btn btn-primary">Edit</a>
-                        <button class="btn btn-danger" onclick="deleteUser('{{ user.id }}')">Delete</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>    
-    <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+ 
 
-    <script>
+{% extends "base.html" %}
+{% load static %}
+{% block title %} Users{% endblock %}
+{% block content %}
+ 
+{% if request.user.is_superuser %}
+<div class="container mt-4">
+    <h1>Kullanıcılar</h1>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.first_name }}</td>
+                <td>{{ user.last_name }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <a href="{% url 'edit-user' user.id %}" class="btn btn-primary">Edit</a>
+                    <button class="btn btn-danger" onclick="deleteUser('{{ user.id }}')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>Bu sayfayı görüntülemek için yetkiniz yok.</p>
+{% endif %}
+
+  
+<input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+<input type="hidden" id="user_token" value="{{ user_token }}">
+
+<script>
+        $(document).ready(function() {
+            const token = getCookie('user_token');
+            const csrftoken = getCookie('csrftoken');
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/users/',
+                headers: {
+                    'Authorization': token,
+                    'X-CSRFToken': csrftoken,
+                },
+                success: function(data) {
+                    // Kullanıcı verilerini tabloya ekleyin
+                    var users = data;
+                    var tableBody = $('#user-table-body');
+                    users.forEach(function(user) {
+                        var row = `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.first_name}</td>
+                                <td>${user.last_name}</td>
+                                <td>${user.email}</td>
+                                <td>
+                                    <a href="/api/edit-user/${user.id}/" class="btn btn-primary">Edit</a>
+                                    <button class="btn btn-danger" onclick="deleteUser(${user.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.append(row);
+                    });
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    // Hata durumunda hata mesajını alın
+                    var errorMessage = JSON.parse(xhr.responseText).detail;
+                    console.log(errorMessage);
+                    // Hata mesajını ekranda gösterin
+                    Swal.fire({
+                        title: 'Error!',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'Cool'
+                    });
+                }
+            });
+        });
+
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -58,10 +109,11 @@
 
         function deleteUser(userId) {
             const csrftoken = getCookie('csrftoken');
-
+            const token = getCookie('user_token');
             fetch(`/api/delete-user/${userId}/`, {
                 method: 'DELETE',
                 headers: {
+                    'Authorization': `Token ${token}`,
                     'X-CSRFToken': csrftoken,
                     'Content-Type': 'application/json'
                 },
@@ -70,13 +122,14 @@
                     alert('User deleted successfully!');
                     location.reload();
                 } else {
-                    alert('Failed to delete user.');
+                    response.json().then(data => {
+                        alert(data.detail || 'Failed to delete user.');
+                    });
                 }
             }).catch(error => {
                 console.error('Error deleting user:', error);
                 alert('An error occurred while deleting user.');
             });
         }
-    </script>
-</body>
-</html>
+</script>
+{% endblock %}
