@@ -10,17 +10,19 @@ import requests
 import json
 import os
 from .UserSerializer import UserSerializer
+ 
 
 @api_view(['POST'])
 def login_request(request):
     if request.user.is_authenticated:
         return Response({"detail": "User already authenticated."}, status=status.HTTP_400_BAD_REQUEST)
-
+  
     data = request.data
     username = data.get("username")
     password = data.get("password")
 
     user = authenticate(request, username=username, password=password)
+     
 
     if user is not None:
         login(request, user)
