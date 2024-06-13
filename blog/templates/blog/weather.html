@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %} Hava Durumu {% endblock  %}
 
 {% block content %}
-    {% include 'partials/_navbar.html' %}
+    
     <div class="container">
         <h1 class="mt-4">Hava Durumu</h1>
 
         <!-- Şehir Seçimi Dropdown Menüsü -->
-        <form method="GET" action="">
+        <form method="GET" action="{% url 'weather' %}">
             <div class="form-group">
                 <label for="citySelect">Şehir Seçin:</label>
                 <select class="form-control" id="citySelect" name="city" onchange="this.form.submit()">

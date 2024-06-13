@@ -57,7 +57,7 @@
                     'X-CSRFToken': csrftoken,
                 },
                 success: function(data) {
-                    // Kullanıcı verilerini tabloya ekleyin
+                    
                     var users = data;
                     var tableBody = $('#user-table-body');
                     users.forEach(function(user) {
@@ -78,10 +78,9 @@
                     });
                 },
                 error: function(xhr, textStatus, errorThrown) {
-                    // Hata durumunda hata mesajını alın
+                    
                     var errorMessage = JSON.parse(xhr.responseText).detail;
-                    console.log(errorMessage);
-                    // Hata mesajını ekranda gösterin
+                    console.log(errorMessage);                   
                     Swal.fire({
                         title: 'Error!',
                         text: errorMessage,

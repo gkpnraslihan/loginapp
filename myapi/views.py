@@ -12,24 +12,24 @@ import os
 from .UserSerializer import UserSerializer
 from rest_framework.permissions import IsAuthenticated
 
+def generate_token(userid):
+    newtoken ='8xqUZcPy8qDMZBnqDQuhZPL8uujdj5eCcCJFAG7gW6rzh01JvMBw6VvPKZU82C0dk2Hgj7gZZBQRLjCYdke67kA3QSzK38a5i2uLpEWKX68QAzYpgv1GBgYMXcKMnGKwQUDU3eC4hFGpGSGQN9XpGLMVJ0YCNZivXbfVhNFYQGXV7uQid7hvBS5MjjGuZHJhigrqyZ'
+    #tabloya yaz
+    return newtoken
+
+
 
 @api_view(['POST'])
-def login_request(request):
-    if request.user.is_authenticated:
-        return Response({"detail": "User already authenticated."}, status=status.HTTP_400_BAD_REQUEST)
-  
-    data = request.data
-    username = data.get("username")
-    password = data.get("password")
+@permission_classes([])
+def login_api(request):
+    username = request.data['username']
+    password = request.data['password']
+    token = ""
+    user = authenticate(request, username = username, password = password)
+    token = generate_token(user.id)
+    return Response({"token": token}, status=status.HTTP_200_OK)
 
-    user = authenticate(request, username=username, password=password)
-     
-
-    if user is not None:
-        login(request, user)
-        return Response({"detail": ("Login successful."+username)}, status=status.HTTP_200_OK)
-    else:
-        return Response({"error": ("Invalid username or password. Username is:"+username)}, status=status.HTTP_400_BAD_REQUEST)
+   
 
 @api_view(['POST'])
 def register_request(request):
@@ -70,19 +70,32 @@ def get_city_list():
         cities = json.load(file) 
     return [city['il_adi'] for city in cities]
 
+def translate_condition(condition):
+    translations = {
+        "clear sky": "Açık",
+        "few clouds": "Az bulutlu",
+        "scattered clouds": "Dağınık bulutlu",
+        "broken clouds": "Parçalı bulutlu",
+        "shower rain": "Sağanak yağışlı",
+        "rain": "Yağmurlu",
+        "thunderstorm": "Fırtına",
+        "snow": "Karlı",
+        "mist": "Sisli"
+    }
+    return translations.get(condition, condition)
 
 
-@api_view(['GET'])
+
 def weather(request):
     api_key = '05c13ccf608154dea88a4e589bf16011'
     cities = get_city_list()
-    city = request.GET.get('city') 
+    city = request.GET.get('city')
 
     if not city:
-        return JsonResponse({'error': 'Şehir belirtilmedi.', 'cities': cities})
+        return render(request, 'blog/weather.html', {'cities': cities})
 
     if city not in cities:
-        return JsonResponse({'error': 'Geçersiz şehir seçimi.', 'cities': cities})
+        return render(request, 'blog/weather.html', {'error': 'Geçersiz şehir seçimi.', 'cities': cities})
 
     base_url = f'https://api.openweathermap.org/data/2.5/weather?appid={api_key}&q={city}'
     response = requests.get(base_url)
@@ -92,16 +105,18 @@ def weather(request):
         if 'main' in weather_data:
             temperature_kelvin = weather_data['main']['temp']
             temperature_celsius = round(temperature_kelvin - 273.15, 2)
+            condition = translate_condition(weather_data['weather'][0]['description'])
             data = {
                 'city': city,
                 'temperature': temperature_celsius,
-                'condition': weather_data['weather'][0]['description'],               
+                'condition': condition,
             }
-            return JsonResponse({'data': data})
+            return render(request, 'blog/weather.html', {'data': data, 'cities': cities})
         else:
-           return JsonResponse({'error': "Geçersiz API yanıtı formatı."})
+            return render(request, 'blog/weather.html', {'error': 'Geçersiz API yanıtı formatı.', 'cities': cities})
     else:
-        return JsonResponse({'error': "Hava durumu verileri alınamadı."})
+        return render(request, 'blog/weather.html', {'error': 'Hava durumu verileri alınamadı.', 'cities': cities})
+
     
 
 @api_view(['GET'])
