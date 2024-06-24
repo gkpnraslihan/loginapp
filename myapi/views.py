@@ -10,7 +10,7 @@ import requests
 import json
 import os
 from .UserSerializer import UserSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 
 def generate_token(userid):
     newtoken ='8xqUZcPy8qDMZBnqDQuhZPL8uujdj5eCcCJFAG7gW6rzh01JvMBw6VvPKZU82C0dk2Hgj7gZZBQRLjCYdke67kA3QSzK38a5i2uLpEWKX68QAzYpgv1GBgYMXcKMnGKwQUDU3eC4hFGpGSGQN9XpGLMVJ0YCNZivXbfVhNFYQGXV7uQid7hvBS5MjjGuZHJhigrqyZ'
@@ -153,7 +153,7 @@ def users_list(request):
     return render(request, 'blog/users.html', {'users': users})
 
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdminUser])
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
     user.delete()

@@ -11,6 +11,8 @@ from rest_framework.permissions import BasePermission
 from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
+from myapi.views import generate_token  
+
 def login_request(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -18,11 +20,13 @@ def login_request(request):
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
-
+      
         user = authenticate(request, username = username, password = password)
         if user is not None:
             login(request, user)
             token = Token.objects.get_or_create(user=user)[0] 
+            token_usertable = generate_token(user.id)
+            print(token_usertable)
             response = HttpResponseRedirect(reverse("home")) 
             response.set_cookie('user_token', token.key, max_age=3600)
             return response
