@@ -13,6 +13,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from myapi.views import generate_token  
 
+
 def login_request(request):
     if request.user.is_authenticated:
         return redirect("home")

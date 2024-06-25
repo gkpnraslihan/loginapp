@@ -10,14 +10,18 @@ import requests
 import json
 import os
 from .UserSerializer import UserSerializer
-from rest_framework.permissions import IsAdminUser
-
-def generate_token(userid):
-    newtoken ='8xqUZcPy8qDMZBnqDQuhZPL8uujdj5eCcCJFAG7gW6rzh01JvMBw6VvPKZU82C0dk2Hgj7gZZBQRLjCYdke67kA3QSzK38a5i2uLpEWKX68QAzYpgv1GBgYMXcKMnGKwQUDU3eC4hFGpGSGQN9XpGLMVJ0YCNZivXbfVhNFYQGXV7uQid7hvBS5MjjGuZHJhigrqyZ'
-    #tabloya yaz
-    return newtoken
+from rest_framework.permissions import IsAdminUser,AllowAny
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
 
 
+
+def generate_token(user_id):
+    token, created = Token.objects.get_or_create(user_id=user_id)
+    if not created:
+        token.delete()
+        token = Token.objects.create(user_id=user_id)
+    return token.key
 
 @api_view(['POST'])
 @permission_classes([])
@@ -30,7 +34,6 @@ def login_api(request):
     return Response({"token": token}, status=status.HTTP_200_OK)
 
    
-
 @api_view(['POST'])
 def register_request(request):
     if request.user.is_authenticated:
@@ -57,12 +60,22 @@ def register_request(request):
         return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def logout_request(request):
-    if not request.user.is_authenticated:
-        return Response({"detail": "User not authenticated."}, status=status.HTTP_400_BAD_REQUEST)
+    if not checkTokenIsValid(request):
+       return Response({"error": "No valid token provided"},status=status.HTTP_401_UNAUTHORIZED, content_type='application/json')
     
+    h=request
     logout(request)
-    return Response({"detail": "Logout successful."}, status=status.HTTP_200_OK)
+    
+    try:
+         a = Token.objects.filter(key=request.headers["Authorization"])
+         a.update(is_deleted=1)
+
+    except Token.DoesNotExist:
+         pass  
+    
+    return Response({"detail": "Logout successful." + str(a.user_id)}, status=status.HTTP_200_OK)
 
 def get_city_list():
     file_path = os.path.join(settings.BASE_DIR, 'static', 'jsons', 'cities.json')
@@ -158,4 +171,32 @@ def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
     user.delete()
     return Response(status=status.HTTP_200_OK, content_type='application/json')
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def test_token_api(request):
+    if not checkTokenIsValid(request):
+       return Response({"error": "No valid token provided"},status=status.HTTP_401_UNAUTHORIZED, content_type='application/json')
     
+    return Response({"success": "Landed here. "},status=status.HTTP_200_OK, content_type='application/json')
+    
+        
+    
+def checkTokenIsValid(request):
+    hd = request.headers["Authorization"]
+    try:
+        to = Token.objects.get(key=hd)
+        return True
+    except:
+       print("well, to is not defined after all!")
+       return False
+
+def get_user(request):
+    if checkTokenIsValid(request):
+        hd = request.headers["Authorization"]
+        try:
+            to = Token.objects.get(key=hd)
+            return to.user
+        except:
+            pass
+
