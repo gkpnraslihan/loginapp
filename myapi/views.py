@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework import status
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
@@ -9,6 +11,8 @@ from django.http import JsonResponse
 import requests 
 import json
 import os
+
+
 from .UserSerializer import UserSerializer
 from rest_framework.permissions import IsAdminUser,AllowAny
 from rest_framework.authtoken.models import Token
@@ -17,10 +21,10 @@ from rest_framework.authentication import TokenAuthentication
 
 
 def generate_token(user_id):
-    token, created = Token.objects.get_or_create(user_id=user_id)
-    if not created:
-        token.delete()
-        token = Token.objects.create(user_id=user_id)
+    token, created = Token.objects.get_or_create(user_id=user_id, is_deleted=False)
+    token.valid_to = timezone.now() + timedelta(days=30)
+    token.save()
+        
     return token.key
 
 @api_view(['POST'])
@@ -66,16 +70,16 @@ def logout_request(request):
        return Response({"error": "No valid token provided"},status=status.HTTP_401_UNAUTHORIZED, content_type='application/json')
     
     h=request
-    logout(request)
+    
     
     try:
          a = Token.objects.filter(key=request.headers["Authorization"])
-         a.update(is_deleted=1)
+         a.update(is_deleted=True)
 
     except Token.DoesNotExist:
          pass  
     
-    return Response({"detail": "Logout successful." + str(a.user_id)}, status=status.HTTP_200_OK)
+    return Response({"detail": "Logout successful."}, status=status.HTTP_200_OK)
 
 def get_city_list():
     file_path = os.path.join(settings.BASE_DIR, 'static', 'jsons', 'cities.json')
@@ -185,7 +189,7 @@ def test_token_api(request):
 def checkTokenIsValid(request):
     hd = request.headers["Authorization"]
     try:
-        to = Token.objects.get(key=hd)
+        to = Token.objects.get(key=hd,is_deleted=False)
         return True
     except:
        print("well, to is not defined after all!")
@@ -196,6 +200,8 @@ def get_user(request):
         hd = request.headers["Authorization"]
         try:
             to = Token.objects.get(key=hd)
+            to.update(valid_to=timezone.now() + timedelta(days=30))
+
             return to.user
         except:
             pass
