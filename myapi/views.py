@@ -187,22 +187,29 @@ def test_token_api(request):
         
     
 def checkTokenIsValid(request):
-    hd = request.headers["Authorization"]
     try:
-        to = Token.objects.get(key=hd,is_deleted=False)
+        header = request.headers["Authorization"]
+        token = Token.objects.get(key=header, is_deleted=False)
+
+        if token.valid_to < timezone.now() + timedelta(days=30):
+            token.valid_to = timezone.now() + timedelta(days=30)
+            token.save()
+
         return True
-    except:
-       print("well, to is not defined after all!")
-       return False
+    except Token.DoesNotExist:
+        return False
+    except KeyError:
+        return False
+
 
 def get_user(request):
     if checkTokenIsValid(request):
-        hd = request.headers["Authorization"]
         try:
-            to = Token.objects.get(key=hd)
-            to.update(valid_to=timezone.now() + timedelta(days=30))
-
-            return to.user
-        except:
+            header = request.headers["Authorization"]
+            token = Token.objects.get(key=header)
+            return token.user
+        except Token.DoesNotExist:
             pass
+
+    return None
 
