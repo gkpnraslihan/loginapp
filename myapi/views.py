@@ -183,17 +183,38 @@ def test_token_api(request):
        return Response({"error": "No valid token provided"},status=status.HTTP_401_UNAUTHORIZED, content_type='application/json')
     
     return Response({"success": "Landed here. "},status=status.HTTP_200_OK, content_type='application/json')
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def user_info_api(request):
+    if not checkTokenIsValid(request):
+       return Response({"error": "No valid token provided"},status=status.HTTP_401_UNAUTHORIZED, content_type='application/json')
+    
+    user = get_user(request)
+    if user:
+        user_data = {
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "is_staff": user.is_staff,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser,
+            
+        }
+        return Response(user_data, status=status.HTTP_200_OK, content_type='application/json')
+    else:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND, content_type='application/json')
     
         
     
 def checkTokenIsValid(request):
     try:
         header = request.headers["Authorization"]
-        token = Token.objects.get(key=header, is_deleted=False)
-
-        if token.valid_to < timezone.now() + timedelta(days=30):
-            token.valid_to = timezone.now() + timedelta(days=30)
-            token.save()
+        token = Token.objects.get(key=header, is_deleted=False, valid_to__gt=timezone.now())
+       
+        token.valid_to = timezone.now() + timedelta(days=30)
+        token.save()
 
         return True
     except Token.DoesNotExist:
