@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login_api, register_request, logout_request, weather, users, user_detail, edit_user, delete_user,users_list,generate_token,test_token_api,user_info_api
+from .views import login_api, register_request, logout_request, weather, users, user_detail, edit_user, delete_user,users_list,generate_token,test_token_api,user_info_api,update_user_info
 from . import views
 
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path('delete-user/<int:pk>/', delete_user, name='delete-user'),
     path('test-token/',test_token_api, name='test_token_api'),
     path('user-info/',user_info_api, name='user_info_api'),
+    path('update-user-info/', update_user_info, name='update_user_info'),
     
     
 ]

@@ -101,6 +101,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'newdb.db',
+        'OPTIONS': {
+            'timeout': 20,  # 20 saniye bekleme süresi
+        }
         
     }
 }

@@ -206,7 +206,58 @@ def user_info_api(request):
     else:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND, content_type='application/json')
     
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_user_info(request):
+    try:
+        header = request.headers["Authorization"] 
         
+        token = Token.objects.get(key=header, is_deleted=False)
+        requestFromUser = User.objects.get(pk=token.user_id)
+
+        request_data = request.data
+
+        user_id = request_data.get("id")
+        updatedUser = User.objects.get(pk=user_id)
+
+        # print("user id from data : ",user_id )
+        # print("user id from token : ",user.id )
+
+        if requestFromUser.is_superuser == False:
+            if str(requestFromUser.id) != user_id:
+                return Response({"error": "You can only update your own information"}, status=status.HTTP_403_FORBIDDEN)
+        
+        new_username = request_data.get("username")
+
+        if new_username != updatedUser.username and User.objects.filter(username=new_username).exists():
+            return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        updatedUser.username = new_username
+        updatedUser.email = request_data.get("email")
+        updatedUser.first_name = request_data.get("first_name")
+        updatedUser.last_name = request_data.get("last_name")
+        
+        
+        if requestFromUser.is_superuser:
+            #   user.username = data.get("username", user.username) 
+            #   user.email = data.get("email", user.email)    
+            #   user.first_name = data.get("first_name", user.first_name)
+            #   user.last_name = data.get("last_name", user.last_name)
+          updatedUser.is_staff = request_data.get("is_staff")
+          updatedUser.is_active = request_data.get("is_active")
+          updatedUser.is_superuser = request_data.get("is_superuser")
+        
+        updatedUser.save()
+
+        return Response({"success": "User info updated successfully"}, status=status.HTTP_200_OK)
+    except Token.DoesNotExist:
+        return Response({"error": "Token does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    except KeyError:
+        return Response({"error": "No Authorization header provided"}, status=status.HTTP_400_BAD_REQUEST)
+    except IndexError:
+        return Response({"error": "Authorization header format is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 def checkTokenIsValid(request):
     try:
