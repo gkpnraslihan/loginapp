@@ -243,9 +243,9 @@ def update_user_info(request):
             #   user.email = data.get("email", user.email)    
             #   user.first_name = data.get("first_name", user.first_name)
             #   user.last_name = data.get("last_name", user.last_name)
-          updatedUser.is_staff = request_data.get("is_staff")
-          updatedUser.is_active = request_data.get("is_active")
-          updatedUser.is_superuser = request_data.get("is_superuser")
+            updatedUser.is_staff = request_data.get("is_staff")
+            updatedUser.is_active = request_data.get("is_active")
+            updatedUser.is_superuser = request_data.get("is_superuser")
         
         updatedUser.save()
 
